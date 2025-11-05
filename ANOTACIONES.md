@@ -91,3 +91,12 @@ target_metadata = Base.metadata
 alembic revision --autogenerate -m "add new field to User model"
 alembic upgrade head
 ```
+
+### Instalar pwdlib passlib
+```
+pip install pwdlib passlib
+```
+### Instalar pwdlib[argon2]
+```
+pip install 'pwdlib[argon2]'
+```

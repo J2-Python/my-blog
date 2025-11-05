@@ -1,48 +1,101 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from .schema import Token, UserPublic
-from fastapi.security import OAuth2PasswordBearer,OAuth2PasswordRequestForm
-from app.core.security import create_access_token, decode_token, get_current_user
-from datetime import timedelta
+from time import clock_getres
+from fastapi import APIRouter, Depends, HTTPException, Path, status
+from .schema import TokenResponse, UserCreate, UserLogin, UserPublic, RoleUpdate
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from app.core.security import (
+    auth2_token,
+    create_access_token,
+    decode_token,
+    get_current_user,
+    has_password,
+    require_admin,
+    verify_password,
+)
 
-FAKE_USERS = {
-    "ricardo@example.com": {
-        "email": "ricardo@example.com",
-        "username": "ricardo",
-        "password": "secret123",
-    },
-    "alumno@example.com": {
-        "email": "alumno@example.com",
-        "username": "alumno",
-        "password": "123456",
-    },
-    "juan@gmail.com": {
-        "email": "juan@gmail.com",
-        "username": "alumno",
-        "password": "123456",
-    },
-}
+from datetime import timedelta
+from app.core.db import get_db
+from sqlalchemy.orm import Session
+from app.api.v1.auth.repository import UserRepository
+from app.models import User
+
+# FAKE_USERS = {
+#     "ricardo@example.com": {
+#         "email": "ricardo@example.com",
+#         "username": "ricardo",
+#         "password": "secret123",
+#     },
+#     "alumno@example.com": {
+#         "email": "alumno@example.com",
+#         "username": "alumno",
+#         "password": "123456",
+#     },
+#     "juan@gmail.com": {
+#         "email": "juan@gmail.com",
+#         "username": "alumno",
+#         "password": "123456",
+#     },
+# }
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    print(f"form_data {form_data}")
-    user = FAKE_USERS.get(form_data.username)  # type: ignore
-    print(f"user {user}")
-    if not user or user["password"] != form_data.password:  # type: ignore
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales Invalidas"
-        )
-
-    token = create_access_token(
-        {"sub": user["email"], "username": user["username"]},
-        expire_delta=timedelta(minutes=30),
+@router.post(
+    "/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED
+)
+def register(payload: UserCreate, db: Session = Depends(get_db)):
+    repository = UserRepository(db)
+    if repository.get_by_email(payload.email):
+        raise HTTPException(status_code=400, detail="Email ya registrado")
+    user = repository.create(
+        email=payload.email,
+        hashed_password=has_password(payload.password),
+        full_name=payload.full_name,
     )
-    return {"access_token": token, "token_type": "bearer"}
-
-@router.get("/me",response_model=UserPublic)
-#! este endpoint ya esta protegido y para acceder es necesario un token activo. La validacion ya depende del metodo get_current_user
-async def read_me(current=Depends(get_current_user)):
-    return {"email":current["email"],"username":current["username"]}
+    db.commit()
+    db.refresh(user)
+    return UserPublic.model_validate(
+        user
+    )  # Validamos que el objeto de sqlalchemy cumpla las reglas del model de pydantic
     
+
+
+@router.post("/login", response_model=TokenResponse)
+async def login(payload: UserLogin, db: Session = Depends(get_db)):
+    repository = UserRepository(db)
+    user = repository.get_by_email(payload.email)
+
+    if not user or not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales invalidas"
+        )
+    token = create_access_token(str(user.id))
+    # Devolvemos un objeto de typo TokenResponse
+    return TokenResponse(access_token=token, user=UserPublic.model_validate(user))
+
+
+@router.get("/me", response_model=UserPublic)
+#! este endpoint ya esta protegido y para acceder es necesario un token activo. La validacion ya depende del metodo get_current_user
+async def read_me(current: User = Depends(get_current_user)):
+    return UserPublic.model_validate(current)
+
+
+@router.put("/role/{user_id}", response_model=UserPublic)
+def set_role(
+    payload: RoleUpdate,
+    user_id: int = Path(..., ge=1),
+    db: Session = Depends(get_db),
+    # parametro privado para manejar los roles permitidos
+    _admin: User = Depends(require_admin),  # type: ignore
+):
+    repository = UserRepository(db)
+    user = repository.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    updated = repository.set_role(user, payload.role)
+    db.commit()
+    db.refresh(updated)
+    return UserPublic.model_validate(updated)
+
+@router.post("/token")
+async def token_endpoint(response=Depends(auth2_token)):
+    return response

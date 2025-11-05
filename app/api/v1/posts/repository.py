@@ -14,7 +14,7 @@ class PostRepository:
         # post=db.get(PostORM,post_id)
         #!Usamos select cuando se quiere usar filtros
         post_find = select(PostORM).where(PostORM.id == post_id)
-        result=self.db.execute(
+        result = self.db.execute(
             post_find
         ).scalar_one_or_none()  # Devuelve on objeto PostORM y no un Result
         return result
@@ -98,28 +98,46 @@ class PostRepository:
         return author_obj
 
     def ensure_tag(self, name: str) -> TagORM:
+        normalize=name.strip().lower()
         tag_obj = self.db.execute(
-            select(TagORM).where(TagORM.name.ilike(name))
+            #para la version sqlite:
+            #select(TagORM).where(func.lower(TagORM.name)==normalize)
+            select(TagORM).where(TagORM.name.ilike(normalize))
         ).scalar_one_or_none()
         if not tag_obj:
-            tag_obj = TagORM(name=name)
+            tag_obj = TagORM(name=normalize)
             self.db.add(tag_obj)
             self.db.flush
 
         return tag_obj
 
     def create_post(
-        self, title: str, content: str, author: Optional[dict], tags: list[dict],image_url:str
+        self,
+        title: str,
+        content: str,
+        author: Optional[dict],
+        tags: list[dict],
+        image_url: str,
     ) -> PostORM:
         author_obj = None
         if author:
-            #author_obj = self.ensure_author(author["name"], author["email"])
+            # author_obj = self.ensure_author(author["name"], author["email"])
             author_obj = self.ensure_author(author["username"], author["email"])
 
-        post = PostORM(title=title, content=content, author=author_obj,image_url=image_url)
-
-        for tag in tags:
-            tag_obj = self.ensure_tag(tag["name"])
+        post = PostORM(
+            title=title, content=content, author=author_obj, image_url=image_url
+        )
+        print(f"tags items {tags}")
+        #!Creamos una lista de tags ['python','fastapi']
+        names = tags[0]["name"].split(
+            ","
+        )  # en esta implemenmtacion tags siempre va a venir como una lista de un solo elemento en este caso de un diccionario Ex: [{'name': 'python,fastapi'}]
+        print(f"Names tags items {names}")
+        for name in names:
+            name = name.strip().lower()
+            if not name:
+                continue
+            tag_obj = self.ensure_tag(name)
             post.tags.append(tag_obj)
 
         #!Marcar la insercion
@@ -138,8 +156,8 @@ class PostRepository:
         for key, value in updates.items():
             print(f"{key}:{value}")
             setattr(post, key, value)
-        #self.db.add(post) #No es necesario porque en el router hago el commit()
-        
+        # self.db.add(post) #No es necesario porque en el router hago el commit()
+
         return post
 
     def delete_post(self, post: PostORM) -> None:

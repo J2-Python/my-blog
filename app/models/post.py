@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 post_tags=Table(
     "post_tags",
     Base.metadata,
-    Column("post.id",ForeignKey("posts.id",ondelete="CASCADE"),primary_key=True),
-    Column("tag.id",ForeignKey("tags.id",ondelete="CASCADE"),primary_key=True)
+    Column("post_id",ForeignKey("posts.id",ondelete="CASCADE"),primary_key=True),
+    Column("tag_id",ForeignKey("tags.id",ondelete="CASCADE"),primary_key=True)
 )
 class PostORM(Base):
     __tablename__="posts"

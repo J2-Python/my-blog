@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
 
 # load_dotenv() #Para leer el .env
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./blog.db")# por defecto usa sqlite
+print(f"{DATABASE_URL}")
 engine_kwargs = {}
 if DATABASE_URL.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
