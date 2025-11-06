@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional, TYPE_CHECKING
+from unicodedata import category
 from sqlalchemy import Column, Integer,String,DateTime, Table,Text, UniqueConstraint,ForeignKey
 #from conf import Base,engine
 from sqlalchemy.orm import Mapped,mapped_column,relationship
@@ -8,8 +9,9 @@ from app.core.db import Base
 
 #! Para evitar las importaciones cruzadas al momento de cargar los modelos de sqlAlchemy
 if TYPE_CHECKING:
-    from .author import AuthorORM
+    from .user import User
     from .tag import TagORM
+    from .category import CategoryORM
 post_tags=Table(
     "post_tags",
     Base.metadata,
@@ -22,8 +24,14 @@ class PostORM(Base):
     id:Mapped[int]=mapped_column(Integer,primary_key=True,index=True)
     title:Mapped[str]=mapped_column(String(100),nullable=False,index=True)
     content:Mapped[str]=mapped_column(Text,nullable=False)
-    author_id:Mapped[Optional[int]]=mapped_column(ForeignKey("authors.id"))
-    author:Mapped[Optional["AuthorORM"]]=relationship("AuthorORM",back_populates="posts")
+    #author_id:Mapped[Optional[int]]=mapped_column(ForeignKey("authors.id"))
+    user_id:Mapped[Optional[int]]=mapped_column(ForeignKey("users.id"))
+    #author:Mapped[Optional["AuthorORM"]]=relationship("AuthorORM",back_populates="posts")
+    user:Mapped[Optional["User"]]=relationship("Users",back_populates="posts")
+    # 👉ForeignKey("categories.id",ondelete="SET NULL"): cuando se borra una categoria cambiamos el valor a NULL
+    category_id:Mapped[Optional[int]]=mapped_column(ForeignKey("categories.id",ondelete="SET NULL"),nullable=True,index=True)
+    category=relationship("CategoryORM",back_populates="posts")
+    
     tags:Mapped[List["TagORM"]]=relationship(secondary="post_tags",back_populates="posts",lazy="selectin",passive_deletes=True)
     created_at:Mapped[datetime]=mapped_column(DateTime,default=datetime.utcnow)
     image_url=mapped_column(String(300),nullable=True)

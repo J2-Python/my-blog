@@ -100,3 +100,21 @@ pip install pwdlib passlib
 ```
 pip install 'pwdlib[argon2]'
 ```
+
+
+### Borrar BD y Generar una migracion Nueva:
+```
+# 1. Borrar BD
+psql -U tu_usuario
+DROP DATABASE nombre_de_tu_bd;
+CREATE DATABASE nombre_de_tu_bd;
+
+# 2. Borrar versiones viejas
+rm -rf alembic/versions/*
+
+# 3. Crear nueva migración
+alembic revision --autogenerate -m "initial schema"
+
+# 4. Aplicar
+alembic upgrade head
+```

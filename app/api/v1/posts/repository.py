@@ -2,7 +2,7 @@ from math import ceil
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import Optional, Tuple, List
-from app.models import PostORM, AuthorORM, TagORM
+from app.models import PostORM, TagORM,User
 
 
 class PostRepository:
@@ -76,22 +76,22 @@ class PostRepository:
             select(PostORM)
             # joinedload() hace un JOIN y trae los datos relacionados en una sola consulta.
             # selectinload()  hace 2 consultas, pero optimizadas con un IN (...)
-            .options(selectinload(PostORM.tags), joinedload(PostORM.author))
+            .options(selectinload(PostORM.tags), joinedload(PostORM.user))
             .where(PostORM.tags.any(func.lower(TagORM.name).in_(normalized_tag_names)))
             .order_by(PostORM.id.asc())
         )
         #!Hacemos la conversionde Sequence[PostORM] a -> List[PostORM]
         return list(self.db.execute(post_list).scalars().all())
 
-    def ensure_author(self, name: str, email: str) -> AuthorORM:
+    def ensure_author(self, name: str, email: str) -> User:
 
         author_obj = self.db.execute(
-            select(AuthorORM).where(AuthorORM.email == email)
+            select(User).where(User.email == email)
         ).scalar_one_or_none()
         print(f"author_obj {author_obj}")
         if not author_obj:
             #! Creo el objeto author_obj que es de tipo AuthorORM
-            author_obj = AuthorORM(name=name, email=email)
+            author_obj = User(name=name, email=email)
             print(f"Author {author_obj}")
             self.db.add(author_obj)
             self.db.flush()  #! aseguramos que el author ya este disponible sin necesidad de hacer el commit

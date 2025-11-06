@@ -3,7 +3,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 from app.core import Base # importa tu Base declarativa
-from app.models import AuthorORM,PostORM,TagORM,post_tags
+from app.models import PostORM,TagORM,post_tags
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
