@@ -211,9 +211,10 @@ async def create_post(
             title=body.title,
             content=body.content,  # type: ignore
             # author= body.author.model_dump() if body.author else None, #Con model_dump() convertimos de objeto a dict
-            author=user,  # le asigno el user que se obtiene de get_current_user
+            user=user,  # le asigno el user que se obtiene de get_current_user
             tags=[tag.model_dump() for tag in body.tags],
             image_url=image_url,
+            category_id=body.category_id
         )
         #!Confirmar con commit
         db.commit()

@@ -27,7 +27,7 @@ class PostORM(Base):
     #author_id:Mapped[Optional[int]]=mapped_column(ForeignKey("authors.id"))
     user_id:Mapped[Optional[int]]=mapped_column(ForeignKey("users.id"))
     #author:Mapped[Optional["AuthorORM"]]=relationship("AuthorORM",back_populates="posts")
-    user:Mapped[Optional["User"]]=relationship("Users",back_populates="posts")
+    user:Mapped[Optional["User"]]=relationship("User",back_populates="posts")
     # 👉ForeignKey("categories.id",ondelete="SET NULL"): cuando se borra una categoria cambiamos el valor a NULL
     category_id:Mapped[Optional[int]]=mapped_column(ForeignKey("categories.id",ondelete="SET NULL"),nullable=True,index=True)
     category=relationship("CategoryORM",back_populates="posts")

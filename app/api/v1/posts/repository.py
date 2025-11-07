@@ -1,8 +1,10 @@
 from math import ceil
+from fastapi import Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import Optional, Tuple, List
 from app.models import PostORM, TagORM,User
+from app.core.security import get_current_user
 
 
 class PostRepository:
@@ -83,18 +85,19 @@ class PostRepository:
         #!Hacemos la conversionde Sequence[PostORM] a -> List[PostORM]
         return list(self.db.execute(post_list).scalars().all())
 
-    def ensure_author(self, name: str, email: str) -> User:
+    def ensure_author(self, name: str, email: str) -> User|None:
 
         author_obj = self.db.execute(
             select(User).where(User.email == email)
         ).scalar_one_or_none()
         print(f"author_obj {author_obj}")
-        if not author_obj:
-            #! Creo el objeto author_obj que es de tipo AuthorORM
-            author_obj = User(name=name, email=email)
-            print(f"Author {author_obj}")
-            self.db.add(author_obj)
-            self.db.flush()  #! aseguramos que el author ya este disponible sin necesidad de hacer el commit
+        
+        # if not author_obj:
+        #     #! Creo el objeto author_obj que es de tipo AuthorORM
+        #     author_obj = User(name=name, email=email)
+        #     print(f"Author {author_obj}")
+        #     self.db.add(author_obj)
+        #     self.db.flush()  #! aseguramos que el author ya este disponible sin necesidad de hacer el commit
         return author_obj
 
     def ensure_tag(self, name: str) -> TagORM:
@@ -115,17 +118,18 @@ class PostRepository:
         self,
         title: str,
         content: str,
-        author: Optional[dict],
         tags: list[dict],
         image_url: str,
+        category_id:Optional[int],
+        user: User=Depends(get_current_user),
     ) -> PostORM:
-        author_obj = None
-        if author:
+        user_obj = None
+        if user:
             # author_obj = self.ensure_author(author["name"], author["email"])
-            author_obj = self.ensure_author(author["username"], author["email"])
+            user_obj = self.ensure_author(user.full_name, user.email)
 
         post = PostORM(
-            title=title, content=content, author=author_obj, image_url=image_url
+            title=title, content=content, user=user_obj, image_url=image_url,category_id=category_id
         )
         print(f"tags items {tags}")
         #!Creamos una lista de tags ['python','fastapi']

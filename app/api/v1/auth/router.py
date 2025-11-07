@@ -1,6 +1,6 @@
 from time import clock_getres
 from fastapi import APIRouter, Depends, HTTPException, Path, status
-from .schema import TokenResponse, UserCreate, UserLogin, UserPublic, RoleUpdate
+from .schemas import TokenResponse, UserCreate, UserLogin, UserPublic, RoleUpdate
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.core.security import (
     auth2_token,

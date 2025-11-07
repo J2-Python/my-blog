@@ -2,7 +2,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, EmailStr
 from typing import Annotated, Literal, Optional, List, Union
 from fastapi import Form
 from app.utils.forbidden_words import FORBIDDEN_WORDS
-
+from app.api.v1.auth.schemas import UserPublic
+from app.api.v1.categories.schemas import CategoryPublic
 
 class Tag(BaseModel):
     name: str = Field(
@@ -27,8 +28,9 @@ class PostBase(BaseModel):
     tags: Optional[List[Tag]] = Field(
         default_factory=list
     )  # Nos crea una lista por cada Post
-    author: Optional[Author] = None
+    user: Optional[UserPublic] = None
     image_url:Optional[str]=None
+    category:Optional[CategoryPublic]=None
 
     #! Aceptamos objetos ORM
     model_config = ConfigDict(from_attributes=True)
@@ -48,7 +50,7 @@ class PostCreate(PostBase):
         description="Contenido del post minimo 10 caracteres",
         examples=["Este es un contenido valido porque tiene 10 caracteres o mas"],
     )
-
+    category_id:Optional[int]=None
     tags: List[Tag] = Field(default_factory=list)  # Nos crea una lista [] por cada Post
     #!Ya no es necesario porque se va a obtener desde el get_current_user
     #author: Optional[Author] = None
@@ -69,9 +71,13 @@ class PostCreate(PostBase):
         cls,
         title:Annotated[str,Form(min_length=3)],
         content:Annotated[str,Form(min_length=3)],
-        tags:Annotated[Optional[List[str]],Form()]):
+        category_id:Annotated[int,Form(ge=1)],
+        tags:Annotated[Optional[List[str]],Form()],
+        
+        ):
+        
         tag_objs=[Tag(name=t) for t in (tags or [])]
-        return cls(title=title,content=content,tags=tag_objs)
+        return cls(title=title,content=content,category_id=category_id,tags=tag_objs)
         #cls.title=title
         #cls.content=content
         #cls.tags=tag_objs
