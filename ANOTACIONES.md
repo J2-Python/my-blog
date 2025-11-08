@@ -118,3 +118,13 @@ alembic revision --autogenerate -m "initial schema"
 # 4. Aplicar
 alembic upgrade head
 ```
+
+### Ejecutar seed
+```
+python3 -m app.seeds all
+```
+
+### slugify
+```
+pip install python-slugify
+```

@@ -23,6 +23,7 @@ class PostORM(Base):
     __table_args__=(UniqueConstraint("title",name="unique_post_title"),)
     id:Mapped[int]=mapped_column(Integer,primary_key=True,index=True)
     title:Mapped[str]=mapped_column(String(100),nullable=False,index=True)
+    slug:Mapped[str]=mapped_column(String(160),unique=True,index=True)
     content:Mapped[str]=mapped_column(Text,nullable=False)
     #author_id:Mapped[Optional[int]]=mapped_column(ForeignKey("authors.id"))
     user_id:Mapped[Optional[int]]=mapped_column(ForeignKey("users.id"))

@@ -11,7 +11,8 @@ import os
 load_dotenv()
 MEDIA_DIR="app/media"
 def create_app()->FastAPI:   
-    app = FastAPI(title="Mini Blog")
+    app = FastAPI(title="Mini Blog", swagger_ui_parameters={
+                  "persistAuthorization": True})
     #!Para crear las tables en la db en caso de que no existan.
     #!Solo aplica para entornos dev, para produccion se usaran migrations
     Base.metadata.create_all(bind=engine) # dev

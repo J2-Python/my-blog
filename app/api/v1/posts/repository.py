@@ -3,8 +3,9 @@ from fastapi import Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import Optional, Tuple, List
-from app.models import PostORM, TagORM,User
+from app.models import PostORM, TagORM, User
 from app.core.security import get_current_user
+from app.utils.slugify_utils import ensure_unique_slug, slugify_base
 
 
 class PostRepository:
@@ -20,6 +21,10 @@ class PostRepository:
             post_find
         ).scalar_one_or_none()  # Devuelve on objeto PostORM y no un Result
         return result
+
+    def get_by_slug(self, slug: str) -> Optional[PostORM]:
+        query = select(PostORM).where(PostORM.slug == slug)
+        return self.db.execute(query).scalar_one_or_none()
 
     def search(
         self,
@@ -85,13 +90,13 @@ class PostRepository:
         #!Hacemos la conversionde Sequence[PostORM] a -> List[PostORM]
         return list(self.db.execute(post_list).scalars().all())
 
-    def ensure_author(self, name: str, email: str) -> User|None:
+    def ensure_author(self, name: str, email: str) -> User | None:
 
         author_obj = self.db.execute(
             select(User).where(User.email == email)
         ).scalar_one_or_none()
         print(f"author_obj {author_obj}")
-        
+
         # if not author_obj:
         #     #! Creo el objeto author_obj que es de tipo AuthorORM
         #     author_obj = User(name=name, email=email)
@@ -101,10 +106,10 @@ class PostRepository:
         return author_obj
 
     def ensure_tag(self, name: str) -> TagORM:
-        normalize=name.strip().lower()
+        normalize = name.strip().lower()
         tag_obj = self.db.execute(
-            #para la version sqlite:
-            #select(TagORM).where(func.lower(TagORM.name)==normalize)
+            # para la version sqlite:
+            # select(TagORM).where(func.lower(TagORM.name)==normalize)
             select(TagORM).where(TagORM.name.ilike(normalize))
         ).scalar_one_or_none()
         if not tag_obj:
@@ -120,16 +125,23 @@ class PostRepository:
         content: str,
         tags: list[dict],
         image_url: str,
-        category_id:Optional[int],
-        user: User=Depends(get_current_user),
+        category_id: Optional[int],
+        user: User = Depends(get_current_user),
     ) -> PostORM:
         user_obj = None
         if user:
             # author_obj = self.ensure_author(author["name"], author["email"])
             user_obj = self.ensure_author(user.full_name, user.email)
+        #!Recuperar slug generado automaticamente
+        unique_slug = ensure_unique_slug(self.db, title)
 
         post = PostORM(
-            title=title, content=content, user=user_obj, image_url=image_url,category_id=category_id
+            title=title,
+            slug=unique_slug,
+            content=content,
+            user=user_obj,
+            image_url=image_url,
+            category_id=category_id,
         )
         print(f"tags items {tags}")
         #!Creamos una lista de tags ['python','fastapi']

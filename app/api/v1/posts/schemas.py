@@ -91,6 +91,8 @@ class PostUpdate(BaseModel):
 
 class PostPublic(PostBase):
     id: int
+    #! Solo definimos aqui el slug porque se va a crear automaticamente
+    slug:str
     #! para que Pydantic esta recibiendo un objeto de SqlAlchemy y lo pueda convertir a un json
     model_config = ConfigDict(from_attributes=True)
 
