@@ -17,7 +17,7 @@ print(f"Diccionario:{engine_kwargs}")
 test = {**engine_kwargs}
 print(test)  # print {"connect_args":{"check_same_thread":False}}
 #! future=True permite usar codigo moderno de sqlalchemy 2.0
-engine = create_engine(DATABASE_URL, echo=True, future=True, **engine_kwargs)
+engine = create_engine(DATABASE_URL, echo=False, future=True, **engine_kwargs)
 #! El commit es controlado y el autoguardado esta deshabilitado
 SessionLocal = sessionmaker(
     bind=engine, autoflush=False, autocommit=False, class_=Session

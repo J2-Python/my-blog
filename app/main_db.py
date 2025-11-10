@@ -7,6 +7,7 @@ from app.api.v1.uploads.router import router as upload_router
 from app.api.v1.tags.router import router as tag_router
 from app.api.v1.categories.router import router as category_router
 from fastapi.staticfiles import StaticFiles
+from app.core.middleware import register_middleware
 import os
 load_dotenv()
 MEDIA_DIR="app/media"
@@ -16,6 +17,7 @@ def create_app()->FastAPI:
     #!Para crear las tables en la db en caso de que no existan.
     #!Solo aplica para entornos dev, para produccion se usaran migrations
     Base.metadata.create_all(bind=engine) # dev
+    register_middleware(app)
     app.include_router(auth_router,prefix="/api/v1") #cumple con la ruta /api/v1/auth/login
     app.include_router(post_router)
     app.include_router(upload_router)

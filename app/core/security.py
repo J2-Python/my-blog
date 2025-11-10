@@ -15,7 +15,7 @@ from app.api.v1.auth.repository import UserRepository
 
 password_hash = PasswordHash.recommended()
 #oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
-oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/toek")
+oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 #! creamos una excepciones personalizadas
 
